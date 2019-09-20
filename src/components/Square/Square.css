@@ -1,0 +1,12 @@
+#board .square {
+    padding: 20px;
+}
+
+#board .playerCircle {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    padding: 5px;
+    display: flex;
+    box-shadow: 0px 0px 1px 1px rgba(0,0,0,0.75);
+}

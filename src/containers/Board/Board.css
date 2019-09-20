@@ -1,0 +1,34 @@
+#board {
+    width: 500px;
+    height: 500px;
+    margin: 20px auto;
+}
+
+#board .row {
+    height: 60px;
+}
+
+#board .col {
+    margin: 2px;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    height: 100%;
+}
+
+button {
+    margin: 5px;
+    padding: 5px;
+    background-color: cornflowerblue;
+    border-radius: 5px;
+    color: white;
+    border: 2px solid white;
+    transition-duration: 0.3s;
+    cursor: pointer;
+}
+
+button:hover {
+    border-color: black;
+}
