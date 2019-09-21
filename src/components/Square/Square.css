@@ -2,12 +2,16 @@
     min-width: 64px;
 }
 
-#board .moveable {
+#board .moveable, #board .canMoveTo {
     cursor: pointer;
 }
 
 #board .movingChecker {
     filter: brightness(0.7);
+}
+
+#board .canMoveTo {
+    background-color: lightblue !important;
 }
 
 #board .square:hover {

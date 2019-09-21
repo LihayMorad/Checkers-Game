@@ -23,12 +23,16 @@ class Square extends Component {
     }
 
     render() {
-        const { color, player, movingChecker } = this.props;
+        const { color, player, movingChecker, canMoveTo } = this.props;
         const isPlayerChecker = player && color === "navajowhite";
 
         return (
             <td
-                className={`square ${isPlayerChecker && 'moveable'} ${movingChecker && 'movingChecker'}`}
+                className={`square 
+                    ${isPlayerChecker && 'moveable'} 
+                    ${movingChecker && 'movingChecker'} 
+                    ${canMoveTo && 'canMoveTo'}`
+                }
                 style={{ backgroundColor: color }}
                 onClick={this.onSquareClick}
             >
