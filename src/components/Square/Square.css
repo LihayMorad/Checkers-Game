@@ -15,7 +15,7 @@
 }
 
 #board .square:hover {
-    background-color: cornflowerblue !important;
+    background-color: #9E9E9E !important;
 }
 
 #board .playerChecker {

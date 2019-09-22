@@ -5,15 +5,18 @@ import './Square.css';
 class Square extends Component {
 
     componentDidMount() {
-        const { row, col, player } = this.props;
-        this.setState({ row, col, player });
+        this.updateState();
     }
 
-    componentDidUpdate(prevProps) { // to make sure each dot has the latest props updated in its state
-        if (prevProps.player !== this.props.player) { // prevent unnecessary renders
-            const { row, col, player } = this.props;
-            this.setState({ row, col, player });
+    componentDidUpdate(prevProps) {
+        if (this.props.player !== prevProps.player) {
+            this.updateState();
         }
+    }
+
+    updateState = () => {
+        const { row, col, player } = this.props;
+        this.setState({ row, col, player });
     }
 
     onSquareClick = () => {
@@ -24,7 +27,7 @@ class Square extends Component {
 
     render() {
         const { color, player, movingChecker, canMoveTo } = this.props;
-        const isPlayerChecker = player && color === "navajowhite";
+        const isPlayerChecker = !!player;
 
         return (
             <td

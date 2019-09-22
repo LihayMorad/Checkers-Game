@@ -35,12 +35,10 @@ table {
 }
 
 button {
-    margin: 5px;
     padding: 5px;
-    background-color: cornflowerblue;
+    background-color: white;
     border-radius: 5px;
-    color: white;
-    border: 2px solid white;
+    border: 2px solid cornflowerblue;
     transition-duration: 0.3s;
     cursor: pointer;
 }

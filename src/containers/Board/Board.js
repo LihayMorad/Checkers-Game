@@ -9,9 +9,10 @@ class Board extends Component {
     state = {
         boardRows: 8,
         boardCols: 8,
+        playerTurn: "red",
         checkerMove: false,
         status: "init",
-        prevBoard: []
+        possibleMoves: []
     }
 
     initBoard = () => {
@@ -26,13 +27,12 @@ class Board extends Component {
         for (let i = 0; i < boardRows; i++) {
             board[i] = new Array(boardCols);
             for (let j = 0; j < boardCols; j++) {
-                board[i][j] = {};
                 const isBlackSquare = (i + j) % 2 === 0;
 
-                let color = "black";
+                let color = "navajowhite";
                 let player = "";
-                if (!isBlackSquare) {
-                    color = "navajowhite";
+                if (isBlackSquare) {
+                    color = "black";
                     if (i <= 2) {
                         player = "white";
                     } else if (i >= boardRows - 3) {
@@ -40,13 +40,15 @@ class Board extends Component {
                     }
                 }
 
-                board[i][j].player = player;
-                board[i][j].key = `${i}_${j}`;
-                board[i][j].row = i;
-                board[i][j].col = j;
-                board[i][j].color = color;
-                board[i][j].movingChecker = false;
-                board[i][j].canMoveTo = false;
+                board[i][j] = {
+                    key: `${i}_${j}`,
+                    row: i,
+                    col: j,
+                    player,
+                    color,
+                    movingChecker: false,
+                    canMoveTo: false
+                };
             }
         }
         this.setState({ board, status: "init" });
@@ -57,106 +59,165 @@ class Board extends Component {
     onBoardSizeChange = event => { this.setState({ [event.target.name]: event.target.value }) }
 
     onSquareClick = square => {
-        const prevBoard = JSON.parse(JSON.stringify(this.state.board)); // short way to clone nested object/array (there are more efficient ways)
+        const { board, checkerMove, playerTurn, squareToMove } = this.state;
 
-        if (this.state.checkerMove) {
-            const oldSquare = this.state.squareToMove;
-            const newSquare = square;
-            const updatedBoard = [...this.state.board];
-            updatedBoard[oldSquare.row][oldSquare.col].movingChecker = false;
+        if (checkerMove || square.player === playerTurn) {
 
-            const move = this.state.board[newSquare.row][newSquare.col].canMoveTo;
-            if (!move) {
-                this.setState(state => ({ board: state.prevBoard, prevBoard: state.board, checkerMove: false, squareToMove: null }));
-                alert("Illegal move");
-                return;
+            if (checkerMove) {
+                const oldSquare = squareToMove;
+                const newSquare = square;
+                const updatedBoard = [...board];
+                updatedBoard[oldSquare.row][oldSquare.col].movingChecker = false;
+
+                const move = board[newSquare.row][newSquare.col].canMoveTo;
+                if (!move) {
+                    this.clearMarks(updatedBoard);
+                    this.setState(state => ({
+                        checkerMove: false,
+                        squareToMove: null,
+                        possibleMoves: []
+                    }));
+                    alert("Illegal move");
+                    return;
+                }
+
+                // change old square
+                updatedBoard[oldSquare.row][oldSquare.col].player = "";
+
+                // set new square
+                updatedBoard[newSquare.row][newSquare.col].player = oldSquare.player;
+
+                // capture opponent square
+                if (move.type === "capture") {
+                    updatedBoard[move.capture.row][move.capture.col].player = "";
+                }
+
+                this.clearMarks(updatedBoard);
+                this.setState({
+                    checkerMove: false,
+                    board: updatedBoard,
+                    status: "playing",
+                    playerTurn: playerTurn === "red" ? "white" : "red",
+                });
             }
 
-            // change old square
-            updatedBoard[oldSquare.row][oldSquare.col].player = "";
-
-            // set new square
-            updatedBoard[newSquare.row][newSquare.col].player = oldSquare.player;
-
-            // capture opponent square
-            if (move.type === "capture") {
-                updatedBoard[move.capture.row][move.capture.col].player = "";
+            else {
+                this.markPossibleMoves(square, "all");
+                this.setState({ checkerMove: true, squareToMove: square });
             }
-
-            this.clearMarks(updatedBoard);
-            this.setState({ checkerMove: false, board: updatedBoard, prevBoard, status: "playing" });
         }
 
         else {
-            this.markPossibleMoves(square);
-            this.setState({ checkerMove: true, squareToMove: square, prevBoard });
+            alert(`Wait for ${playerTurn} player to finish its turn!`);
         }
 
     }
 
-    markPossibleMoves = square => {
-        const board = this.state.board;
-        const updatedBoard = [...this.state.board];
+    markPossibleMoves = (square, typeToMark) => {
+        const { board, boardRows, boardCols, possibleMoves } = this.state;
+        const updatedBoard = [...board];
         updatedBoard[square.row][square.col].movingChecker = true;
 
         if (square.player === "white") {
 
-            if (square.row + 1 < this.state.boardRows) {
+            if (typeToMark === "all") {
+                if (square.row + 1 < boardRows) {
 
-                // one step (move right)
-                if (square.col + 1 < this.state.boardCols) {
-                    if (board[square.row + 1][square.col + 1].player === "") {
-                        updatedBoard[square.row + 1][square.col + 1].canMoveTo = { type: "move" };
+                    // one step (move right)
+                    if (square.col + 1 < boardCols) {
+                        if (board[square.row + 1][square.col + 1].player === "") {
+                            updatedBoard[square.row + 1][square.col + 1].canMoveTo = { type: "move" };
+                            possibleMoves.push({
+                                type: "move",
+                                from: { row: square.row, col: square.col },
+                                to: { row: square.row + 1, col: square.col + 1 }
+                            });
+                        }
                     }
-                }
 
-                // one step (move left)
-                if (square.col - 1 >= 0) {
-                    if (board[square.row + 1][square.col - 1].player === "") {
-                        updatedBoard[square.row + 1][square.col - 1].canMoveTo = { type: "move" };
+                    // one step (move left)
+                    if (square.col - 1 >= 0) {
+                        if (board[square.row + 1][square.col - 1].player === "") {
+                            updatedBoard[square.row + 1][square.col - 1].canMoveTo = { type: "move" };
+                            possibleMoves.push({
+                                type: "move",
+                                from: { row: square.row, col: square.col },
+                                to: { row: square.row + 1, col: square.col - 1 }
+                            });
+                        }
                     }
                 }
             }
 
             // two step (capture right)
-            if (square.row + 2 < this.state.boardRows && square.col + 2 < this.state.boardCols) {
+            if (square.row + 2 < boardRows && square.col + 2 < boardCols) {
                 if (board[square.row + 1][square.col + 1].player === "red" &&
                     board[square.row + 2][square.col + 2].player === "") {
                     updatedBoard[square.row + 2][square.col + 2].canMoveTo = { type: "capture", capture: { row: square.row + 1, col: square.col + 1 } };
+                    possibleMoves.push({
+                        type: "capture",
+                        from: { row: square.row, col: square.col },
+                        to: { row: square.row + 2, col: square.col + 2 },
+                        capture: { row: square.row + 1, col: square.col + 1 }
+                    });
                 }
             }
 
             // two step (capture left)
-            if (square.row + 2 < this.state.boardRows && square.col - 2 >= 0) {
+            if (square.row + 2 < boardRows && square.col - 2 >= 0) {
                 if (board[square.row + 1][square.col - 1].player === "red" &&
                     board[square.row + 2][square.col - 2].player === "") {
                     updatedBoard[square.row + 2][square.col - 2].canMoveTo = { type: "capture", capture: { row: square.row + 1, col: square.col - 1 } };
+                    possibleMoves.push({
+                        type: "capture",
+                        from: { row: square.row, col: square.col },
+                        to: { row: square.row + 2, col: square.col - 2 },
+                        capture: { row: square.row + 1, col: square.col - 1 }
+                    });
                 }
             }
 
         } else if (square.player === "red") {
 
-            // one step (move right)
-            if (square.row - 1 >= 0) {
-                if (square.col + 1 < this.state.boardCols) {
-                    if (board[square.row - 1][square.col + 1].player === "") {
-                        updatedBoard[square.row - 1][square.col + 1].canMoveTo = { type: "move" };
+            if (typeToMark === "all") {
+                // one step (move right)
+                if (square.row - 1 >= 0) {
+                    if (square.col + 1 < boardCols) {
+                        if (board[square.row - 1][square.col + 1].player === "") {
+                            updatedBoard[square.row - 1][square.col + 1].canMoveTo = { type: "move" };
+                            possibleMoves.push({
+                                type: "move",
+                                from: { row: square.row, col: square.col },
+                                to: { row: square.row - 1, col: square.col + 1 }
+                            });
+                        }
                     }
-                }
 
-                // one step (move left)
-                if (square.col - 1 >= 0) {
-                    if (board[square.row - 1][square.col - 1].player === "") {
-                        updatedBoard[square.row - 1][square.col - 1].canMoveTo = { type: "move" };
+                    // one step (move left)
+                    if (square.col - 1 >= 0) {
+                        if (board[square.row - 1][square.col - 1].player === "") {
+                            updatedBoard[square.row - 1][square.col - 1].canMoveTo = { type: "move" };
+                            possibleMoves.push({
+                                type: "move",
+                                from: { row: square.row, col: square.col },
+                                to: { row: square.row - 1, col: square.col - 1 }
+                            });
+                        }
                     }
                 }
             }
 
             // two step (capture right)
-            if (square.row - 2 >= 0 && square.col + 2 < this.state.boardCols) {
+            if (square.row - 2 >= 0 && square.col + 2 < boardCols) {
                 if (board[square.row - 1][square.col + 1].player === "white" &&
                     board[square.row - 2][square.col + 2].player === "") {
                     updatedBoard[square.row - 2][square.col + 2].canMoveTo = { type: "capture", capture: { row: square.row - 1, col: square.col + 1 } };
+                    possibleMoves.push({
+                        type: "capture",
+                        from: { row: square.row, col: square.col },
+                        to: { row: square.row - 2, col: square.col + 2 },
+                        capture: { row: square.row - 1, col: square.col + 1 }
+                    });
                 }
             }
 
@@ -165,34 +226,27 @@ class Board extends Component {
                 if (board[square.row - 1][square.col - 1].player === "white" &&
                     board[square.row - 2][square.col - 2].player === "") {
                     updatedBoard[square.row - 2][square.col - 2].canMoveTo = { type: "capture", capture: { row: square.row - 1, col: square.col - 1 } };
+                    possibleMoves.push({
+                        type: "capture",
+                        from: { row: square.row, col: square.col },
+                        to: { row: square.row - 2, col: square.col - 2 },
+                        capture: { row: square.row - 1, col: square.col - 1 }
+                    });
                 }
             }
         }
 
-        this.setState({ board: updatedBoard });
-    }
-
-    undoOneMove = () => {
-        this.setState(state => {
-            const updatedPrevBoard = [...state.prevBoard];
-            if (state.squareToMove) {
-                updatedPrevBoard[state.squareToMove.row][state.squareToMove.col].movingChecker = false;
-            }
-            this.clearMarks(updatedPrevBoard);
-            return { board: updatedPrevBoard, prevBoard: state.board };
-        });
+        this.setState({ board: updatedBoard, possibleMoves });
     }
 
     clearMarks = updatedBoard => {
-        for (let i = 0; i < this.state.boardRows; i++) {
-            for (let j = 0; j < this.state.boardCols; j++) {
-                updatedBoard[i][j].canMoveTo = false;
-            }
-        }
+        this.state.possibleMoves.forEach(move => {
+            updatedBoard[move.to.row][move.to.col].canMoveTo = false;
+        });
     }
 
     render() {
-        const { boardRows, boardCols, board, status, checkerMove } = this.state;
+        const { boardRows, boardCols, board, checkerMove, playerTurn } = this.state;
 
         return (
             <>
@@ -204,14 +258,10 @@ class Board extends Component {
                 </div>
 
                 <button onClick={this.initBoard}>Start / Reset Game</button>
-                {
-                    status === "playing" && <button onClick={this.undoOneMove}>
-                        Undo / Redo Move
-                        </button>
-                }
 
                 {
                     board && <div id="board">
+                        <h3>Player turn: <span style={{ color: playerTurn }}>{playerTurn}</span></h3>
                         <table>
                             <tbody>
                                 {
